@@ -1,3 +1,5 @@
 /t5_finetuned_airline_incidents/
 /t5_airline_incidents/
 /processed_dataset/
+*.pyc
+*.log
