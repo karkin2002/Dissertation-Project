@@ -1,10 +1,13 @@
 from scripts.ui.ui import WindowUI
-from scripts.ui.ui_element import Text, TextBox, Image, Button
+from scripts.ui.ui_element import Text, TextBox, Image, Button, Box
 import pygame, scripts.utility.glob as glob
 from scripts.utility.logger import Logger
 import tkinter as tk
 from tkinter import filedialog
 from custom.scripts.text_box import TextBoxUIElem, set_dim_based_on_win_dim
+from custom.scripts.pre_treained_llm import PreTrainedLLM
+from custom.scripts.counterfactual_generator import CounterfactualGenerator
+from scripts.utility.glob import Tag
 
 
 class MainUI:
@@ -21,6 +24,7 @@ class MainUI:
     BUTTON_TEXT_HOVER = "BUTTON_TEXT_HOVER"
     BUTTON_TEXT = "BUTTON_TEXT"
     TEXT_BOX_BG = "TEXT_BOX_BG"
+    LOADING_BAR_BOX = "LOADING_BAR_BOX"
     
     TITLE_FONT = "TITLE_FONT"
     PG_FONT_REGULAR = "PG_FONT_REGULAR"
@@ -46,7 +50,15 @@ class MainUI:
     DEFAULT_UPLOAD_TEXT = ":   None"
     LOADED_UPLOAD_TEXT = ":   \"{llm_file_path}\""
     
-    __SCROLL_SPEED = 30
+    __SCROLL_SPEED = 200
+    
+    __LOADING_BAR = "LOADING_BAR"
+    __LOADING_BAR_BOX = "LOADING_BAR_BOX"
+    __LOADING_BAR_BOX_OFFSET = (0, 0)
+    __LOADING_BAR_BOX_DIM = (825, 200)
+    __LOADING_BAR_TEXT = "LOADING_BAR_TEXT"
+    __LOADING_BAR_TEXT_OFFSET = (0, 0)
+    LOADING_TEXT = "Generating Counterfactuals..."
     
     def __init__(self, window: WindowUI):
         
@@ -59,6 +71,7 @@ class MainUI:
         glob.add_colour(self.BUTTON_TEXT_HOVER, (40, 100, 150))
         glob.add_colour(self.BUTTON_TEXT, (180, 225, 255))
         glob.add_colour(self.TEXT_BOX_BG, (49, 49, 49))
+        glob.add_colour(self.LOADING_BAR_BOX, (34, 34, 34))
         
         glob.add_font(self.TITLE_FONT, self.TITLE_FONT_PATH, 60)
         glob.add_font(self.PG_FONT_REGULAR, self.REGULAR_FONT_PATH, 30)
@@ -79,9 +92,12 @@ class MainUI:
         
         self.pixels_scrolled = 0
         
+        self.llm = PreTrainedLLM()
+        
         self.setup_title(window)
         self.setup_upload(window)
-        self.setup_user_input(window)
+        self.__setup_user_input(window)
+        self.__setup_loading_bar(window)
     
         
     def select_folder():
@@ -167,27 +183,8 @@ class MainUI:
             )
         ))
         
-        
-    def handle_inputs(self, window: WindowUI, run_first_time: bool):
-        
-        if window.is_pressed(self.UPLOAD):
-            folder_path = MainUI.select_folder()
-            window.get_elem(self.UPLOAD_TEXT).update_text(window.win_dim, self.LOADED_UPLOAD_TEXT.format(llm_file_path=folder_path))
-            
-        set_dim_based_on_win_dim(
-            run_first_time, 
-            window, 
-            window.get_elem(self.EXPLANATION), 
-            self.__EXPLANATION_DIM, 
-            dynamic_width=True
-        )
-        
-        if self.input_text_box.handle_inputs(window, run_first_time):
-            window.get_elem(self.output_text_box.text_box_name).update_text(
-                window.win_dim, window.get_elem(self.input_text_box.text_box_name).text)
-        
-        self.output_text_box.handle_inputs(window, run_first_time)
-        
+    
+    def __handel_scroll(self, window: WindowUI):
         scroll = 0
         
         if window.scroll_up:
@@ -214,11 +211,75 @@ class MainUI:
         
         
         
-    def setup_user_input(self, window: WindowUI):
+    def __setup_user_input(self, window: WindowUI):
         
         self.input_text_box = TextBoxUIElem(self.page_elements, window, "LLM_INPUT", (40, 360), "LLM Input")
         
         self.output_text_box = TextBoxUIElem(self.page_elements, window, "LLM_OUTPUT", (40, 730), "LLM Output", False)
+        
+    
+    def __setup_loading_bar(self, window: WindowUI):
+        glob.add_tag(Tag(self.__LOADING_BAR, "Loading Bar", False))
+        
+        window.add_elem(
+            self.__LOADING_BAR_BOX,
+            Box(
+                self.__LOADING_BAR_BOX_DIM,
+                self.__LOADING_BAR_BOX,
+                self.__LOADING_BAR_BOX_OFFSET,
+                tags = [self.__LOADING_BAR]
+            )
+        )
+        
+        window.add_elem(
+            self.__LOADING_BAR_TEXT,
+            Text(
+                self.LOADING_TEXT.format(percentage=0),
+                self.BUTTON_FONT,
+                self.WHITE_TEXT,
+                self.__LOADING_BAR_TEXT_OFFSET,
+                tags = [self.__LOADING_BAR]
+            )
+        )
+        
+        
+        
+        
+    
+    def handle_inputs(self, window: WindowUI, run_first_time: bool):
+        
+        if window.is_pressed(self.UPLOAD):
+            folder_path = MainUI.select_folder()
+            window.get_elem(self.UPLOAD_TEXT).update_text(window.win_dim, self.LOADED_UPLOAD_TEXT.format(llm_file_path=folder_path))
+            self.llm.set_model_folder_path(folder_path)
+            
+        set_dim_based_on_win_dim(
+            run_first_time, 
+            window, 
+            window.get_elem(self.EXPLANATION), 
+            self.__EXPLANATION_DIM, 
+            dynamic_width=True
+        )
+        
+        if self.input_text_box.handle_inputs(window, run_first_time) and self.llm.model != None:
+            window.input_stream.end_input_stream()
+            input = window.get_elem(self.input_text_box.text_box_name).text
+            self.llm.set_input_text(input)
+            
+            output = self.llm.get_output()
+            window.get_elem(self.output_text_box.text_box_name).update_text(window.win_dim, output)
+            
+            glob.get_tag(self.__LOADING_BAR).display = True
+            window.events()
+            window.draw()
+            CounterfactualGenerator.get_output(window, input, output, self.llm)
+            glob.get_tag(self.__LOADING_BAR).display = False
+            window.get_elem(self.__LOADING_BAR_TEXT).update_text(self.LOADING_TEXT)
+        
+        self.output_text_box.handle_inputs(window, run_first_time)
+    
+        
+        self.__handel_scroll(window)
         
         
         
