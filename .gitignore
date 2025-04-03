@@ -1,4 +1,4 @@
-/LLM_Training/t5_finetuned_airline_incidents/
+/t5_finetuned_airline_incidents/
 /LLM_Training/t5_airline_incidents/
 /processed_dataset/
 *.pyc

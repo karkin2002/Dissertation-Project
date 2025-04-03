@@ -246,6 +246,9 @@ class Box(UIElement):
     def __init__(self,
                  box_dim: tuple[int, int],
                  colour: str,
+                 outline_width: int = 0,
+                 outline_colour: str = None,
+                 border_radius: int = 0,
                  offset: tuple[int, int] = (0, 0),
                  alpha: int = 255,
                  centered: bool = True,
@@ -266,11 +269,31 @@ class Box(UIElement):
         self.original_box_dim = box_dim
         self.box_dim = self.original_box_dim
         self.colour = colour
+        self.border_radius = border_radius
+        self.outline_width = outline_width
+        self.outline_colour = outline_colour
         
         
     def set_surf(self, surf_dim: tuple[int, int]):
-        surface = pygame.Surface([self.box_dim[0] * glob.scale, self.box_dim[1] * glob.scale], pygame.SRCALPHA)
-        surface.fill(glob.get_colour(self.colour))
+
+        rect_dim = (self.box_dim[0] * glob.scale, self.box_dim[1] * glob.scale)
+        surface = pygame.Surface(rect_dim, pygame.SRCALPHA)
+
+        pygame.draw.rect(
+            surface,
+            glob.get_colour(self.colour),
+            [0, 0, rect_dim[0], rect_dim[1]],
+            border_radius = round(self.border_radius * glob.scale)
+        )
+
+        if self.outline_width > 0:
+            pygame.draw.rect(
+                surface,
+                glob.get_colour(self.outline_colour),
+                [0, 0, rect_dim[0], rect_dim[1]],
+                self.outline_width,
+                border_radius = round(self.border_radius * glob.scale)
+            )
         
         self._create_surf(
             surf_dim, 
@@ -361,18 +384,21 @@ class Text(UIElement):
                 
                 
 class TextBox(Text):
-    def __init__(self, 
-                    box_dim: tuple[int, int],
-                    bg_colour: str,
-                    text: str,
-                    font: str,
-                    colour: str,
-                    offset: tuple[int, int] = (0, 0),
-                    alpha: int = 255,
-                    centered: bool = True,
-                    display: bool = True,
-                    tags: list[str] = [],
-                    **align_args: dict[str, bool]):
+    def __init__(self,
+                 box_dim: tuple[int, int],
+                 text: str,
+                 font: str,
+                 colour: str,
+                 box_colour: str = None,
+                 outline_width: int = 0,
+                 outline_colour: str = None,
+                 border_radius: int = 0,
+                 offset: tuple[int, int] = (0, 0),
+                 alpha: int = 255,
+                 centered: bool = True,
+                 display: bool = True,
+                 tags: list[str] = [],
+                 **align_args: dict[str, bool]):
         
         super().__init__(
             text,
@@ -387,18 +413,35 @@ class TextBox(Text):
         )
         
         self.box_dim = box_dim
-        self.bg_colour = bg_colour
+        self.box_colour = box_colour
+        self.outline_width = outline_width
+        self.outline_colour = outline_colour
+        self.border_radius = border_radius
         
         
     def set_surf(self, surf_dim: tuple[int, int]):
+        new_edge_box_dim = ((self.box_dim[0] + self.outline_width) * glob.scale, (self.box_dim[1] + self.outline_width) * glob.scale)
         new_box_dim = (self.box_dim[0] * glob.scale, self.box_dim[1] * glob.scale)
-        
-        if self.bg_colour == None:
-            surface = pygame.Surface(new_box_dim, pygame.SRCALPHA)
-        else:
-            surface = pygame.Surface(new_box_dim, pygame.SRCALPHA)
-            surface.fill(glob.get_colour(self.bg_colour))
-            
+
+        surface = pygame.Surface(new_edge_box_dim, pygame.SRCALPHA)
+
+        if self.box_colour != None:
+            pygame.draw.rect(
+                surface,
+                glob.get_colour(self.box_colour),
+                [0, 0, new_edge_box_dim[0], new_edge_box_dim[1]],
+                border_radius = round(self.border_radius * glob.scale)
+            )
+
+            if self.outline_width > 0:
+                pygame.draw.rect(
+                    surface,
+                    glob.get_colour(self.outline_colour),
+                    [0, 0, new_edge_box_dim[0], new_edge_box_dim[1]],
+                    self.outline_width,
+                    border_radius = round(self.border_radius * glob.scale)
+                )
+
         font = glob.get_font(self.font)
         
         words = self.text.split(' ')
@@ -425,13 +468,13 @@ class TextBox(Text):
                 # Only add ellipsis if it fits in the current line
                 if x + ellipsis_width <= new_box_dim[0] and y + ellipsis_height <= new_box_dim[1]:
                     surface.blit(
-                        Text.createText('...', self.font, glob.get_colour(self.colour)), (x, y)
+                        Text.createText('...', self.font, glob.get_colour(self.colour)), (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
                     )
                 break
             
             # Draw the word if there's still space
             surface.blit(
-                Text.createText(word, self.font, glob.get_colour(self.colour)), (x, y)
+                Text.createText(word, self.font, glob.get_colour(self.colour)), (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
             )
             x += word_width + space_width
 

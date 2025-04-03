@@ -15,11 +15,11 @@ Research.
 
 --- Use of External Code
 The UI code in this program is based upon an engine I created outside of 
-Universuity, and therefore is not part of the project. The repo for that engine
+University, and therefore is not part of the project. The repo for that engine
 is available at: https://github.com/karkin2002/Arctic-Engine
 
 Any code written in their main.py or ./custom/ directory is part of the project
-and is subsiquently commented to reflect this.
+and is subsequently commented to reflect this.
 
 --- Description6
 This file is the main file for the program.
@@ -28,7 +28,6 @@ This file is the main file for the program.
 import pygame, scripts.utility.glob as glob
 from scripts.utility.logger import Logger
 from scripts.ui.ui import WindowUI
-from custom.scripts.menu import Menu
 from custom.scripts.main_ui import MainUI
 
 ## Loading Logger and initialising.

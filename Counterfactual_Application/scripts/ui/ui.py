@@ -41,7 +41,7 @@ class WindowUI:
             win_dim (tuple[int, int], optional): Window (<width>, <height>). Defaults to (700, 500).
         """        
         
-        ctypes.windll.user32.SetProcessDPIAware() ## DON'T TURN THIS ON WITH FULLSCREEN
+        # ctypes.windll.user32.SetProcessDPIAware() ## DON'T TURN THIS ON WITH FULLSCREEN
         
         self.win_dim: tuple[int, int] = None
         self.win: pygame.Surface = None

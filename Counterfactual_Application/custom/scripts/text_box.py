@@ -38,6 +38,7 @@ class TextBoxUIElem:
     WHITE_TEXT = "WHITE_TEXT"
     TEXT_BOX_BG = "TEXT_BOX_BG"
     PG_FONT_REGULAR = "PG_FONT_REGULAR"
+    TITLE_TEXT = "TITLE_TEXT"
     
     BUTTON_PRESS_IMG = "button_press"
     BUTTON_UNPRESS_IMG = "button_unpress"
@@ -76,7 +77,7 @@ class TextBoxUIElem:
             Text(
                 self.title_text,
                 self.TEXT_BOX_TITLE_FONT,
-                self.WHITE_TEXT,
+                self.TITLE_TEXT,
                 offset=self.offset,
                 centered=False,
                 align_top = True,
@@ -88,10 +89,13 @@ class TextBoxUIElem:
             self.text_box_name,
             TextBox(
                 self.__DIM,
-                self.TEXT_BOX_BG,
                 "",
                 self.PG_FONT_REGULAR,
                 self.WHITE_TEXT,
+                self.TEXT_BOX_BG,
+                5,
+                "TEXT_BOX_OUTLINE",
+                20,
                 (self.offset[0], self.offset[1] + 60),
                 centered=False,
                 align_top = True,

@@ -55,7 +55,11 @@ class PreTrainedLLM:
             
         elif self.model_type == self.QWEN:
             self.tokenizer = AutoTokenizer.from_pretrained(self.__model_folder_path)
-            self.model = AutoModelForCausalLM.from_pretrained(self.__model_folder_path).to(self.__device)
+            self.model = AutoModelForCausalLM.from_pretrained(
+                self.__model_folder_path,
+                torch_dtype=torch.float16,
+                device_map="auto"
+            )
 
 
     def __tokenise_input(self):

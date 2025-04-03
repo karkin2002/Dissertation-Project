@@ -8,23 +8,26 @@ from custom.scripts.text_box import TextBoxUIElem, set_dim_based_on_win_dim
 from custom.scripts.pre_treained_llm import PreTrainedLLM
 from custom.scripts.counterfactual_generator import CounterfactualGenerator
 from scripts.utility.glob import Tag
+import platform, subprocess
 
 
 class MainUI:
     
-    TITLE_FONT_PATH = r"static\fonts\example_font_title.ttf"
-    REGULAR_FONT_PATH = r"static\fonts\example_font_regular.ttf"
-    BOLD_FONT_PATH = r"static\fonts\example_font_bold.ttf"
+    TITLE_FONT_PATH = r"static/fonts/example_font_title.ttf"
+    REGULAR_FONT_PATH = r"static/fonts/example_font_regular.ttf"
+    BOLD_FONT_PATH = r"static/fonts/example_font_bold.ttf"
     
     WHITE = "WHITE"
     BLACK = "BLACK"
     BG_COLOUR = "BG"
     WHITE_TEXT = "WHITE_TEXT"
     BLACK_TEXT = "BLACK_TEXT"
+    TITLE_TEXT = "TITLE_TEXT"
     BUTTON_TEXT_HOVER = "BUTTON_TEXT_HOVER"
     BUTTON_TEXT = "BUTTON_TEXT"
     TEXT_BOX_BG = "TEXT_BOX_BG"
     LOADING_BAR_BOX = "LOADING_BAR_BOX"
+    TEXT_BOX_OUTLINE = "TEXT_BOX_OUTLINE"
     
     TITLE_FONT = "TITLE_FONT"
     PG_FONT_REGULAR = "PG_FONT_REGULAR"
@@ -72,6 +75,8 @@ class MainUI:
         glob.add_colour(self.BUTTON_TEXT, (180, 225, 255))
         glob.add_colour(self.TEXT_BOX_BG, (49, 49, 49))
         glob.add_colour(self.LOADING_BAR_BOX, (34, 34, 34))
+        glob.add_colour(self.TEXT_BOX_OUTLINE, (57, 59, 64))
+        glob.add_colour(self.TITLE_TEXT, (254, 213, 102))
         
         glob.add_font(self.TITLE_FONT, self.TITLE_FONT_PATH, 60)
         glob.add_font(self.PG_FONT_REGULAR, self.REGULAR_FONT_PATH, 30)
@@ -80,11 +85,11 @@ class MainUI:
         glob.add_font(self.BUTTON_FONT_HOVER, self.BOLD_FONT_PATH, 35)
         glob.add_font(self.TEXT_BOX_TITLE_FONT, self.TITLE_FONT_PATH, 35)
         
-        glob.add_img_surf("button_press", pygame.image.load(r"custom\images\button_press.png"))
-        glob.add_img_surf("button_unpress", pygame.image.load(r"custom\images\button_unpress.png"))
-        glob.add_img_surf("button_warning", pygame.image.load(r"custom\images\button_warning.png"))
-        glob.add_img_surf("submit_unpress", pygame.image.load(r"custom\images\submit_unpress.png"))
-        glob.add_img_surf("submit_press", pygame.image.load(r"custom\images\submit_unpress.png"))
+        glob.add_img_surf("button_press", pygame.image.load(r"custom/images/button_press.png"))
+        glob.add_img_surf("button_unpress", pygame.image.load(r"custom/images/button_unpress.png"))
+        glob.add_img_surf("button_warning", pygame.image.load(r"custom/images/button_warning.png"))
+        glob.add_img_surf("submit_unpress", pygame.image.load(r"custom/images/submit_unpress.png"))
+        glob.add_img_surf("submit_press", pygame.image.load(r"custom/images/submit_unpress.png"))
         
         self.page_elements = []
         self.input_text_box = None
@@ -100,7 +105,7 @@ class MainUI:
         self.__setup_loading_bar(window)
     
         
-    def select_folder():
+    def select_folder_windows():
         root = tk.Tk()
         root.withdraw()  # Hide the root window
         folder_path = filedialog.askdirectory()
@@ -109,6 +114,16 @@ class MainUI:
         root.destroy()
         
         return folder_path
+
+    def select_folder_linux():
+        try:
+            folder_path = subprocess.check_output(["zenity", "--file-selection", "--directory"], text=True).strip()
+            if folder_path:
+                print(f"Selected folder: {folder_path}")
+            return folder_path
+        except subprocess.CalledProcessError:
+            print("No folder selected or dialog closed.")
+            return None
     
     def setup_title(self, window: WindowUI):
         
@@ -118,7 +133,7 @@ class MainUI:
             Text(
                 self.__TITLE_TEXT,
                 self.TITLE_FONT,
-                self.WHITE_TEXT,
+                self.TITLE_TEXT,
                 self.__TITLE_OFFSET,
                 centered = False,
                 align_top = True,
@@ -131,11 +146,11 @@ class MainUI:
             self.EXPLANATION,
             TextBox(
                 (300, 300),
-                None,
                 self.__EXPLANATION_TEXT,
                 self.PG_FONT_REGULAR,
                 self.WHITE_TEXT,
-                self.__EXPLANATION_OFFSET,
+                None,
+                offset = self.__EXPLANATION_OFFSET,
                 centered = False,
                 align_top = True,
                 align_left = True
@@ -226,7 +241,10 @@ class MainUI:
             Box(
                 self.__LOADING_BAR_BOX_DIM,
                 self.__LOADING_BAR_BOX,
-                self.__LOADING_BAR_BOX_OFFSET,
+                5,
+                self.TITLE_TEXT,
+                20,
+                offset = self.__LOADING_BAR_BOX_OFFSET,
                 tags = [self.__LOADING_BAR]
             )
         )
@@ -249,7 +267,16 @@ class MainUI:
     def handle_inputs(self, window: WindowUI, run_first_time: bool):
         
         if window.is_pressed(self.UPLOAD):
-            folder_path = MainUI.select_folder()
+            if platform.system() == "Windows":
+                folder_path = MainUI.select_folder_windows()
+
+            elif platform.system() == "Linux":
+                folder_path = MainUI.select_folder_linux()
+
+            else:
+                Logger.raise_exception("OS not supported. Please use Windows or Linux.")
+
+
             window.get_elem(self.UPLOAD_TEXT).update_text(window.win_dim, self.LOADED_UPLOAD_TEXT.format(llm_file_path=folder_path))
             self.llm.set_model_folder_path(folder_path)
             

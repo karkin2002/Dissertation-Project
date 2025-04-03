@@ -148,9 +148,9 @@ class CounterfactualGenerator:
         window.draw()
         
         analysis_llm = PreTrainedLLM(model_type=PreTrainedLLM.QWEN)
-        analysis_llm.set_model_folder_path(r"C:\Users\karki\Qwen2.5-3B")
+        analysis_llm.set_model_folder_path(r"/home/arkin/Documents/LLMs/DeepSeek-R1-Distill-Llama-8B")
         analysis_llm.max_input_length = 4000
-        analysis_llm.max_output_length = 2000
+        analysis_llm.max_output_length = 6000
         information = """
 Scenario: A engineer / airline crew member has written a report detailing an airline incident. The report is fed into an Large Language Model, whereby the output is a prediction of the part failure. To explain the LLMs prediction, the LLM generates counterfactuals. This works by iterating through each word in the input and replacing it with a synonym or antonym and observing how the output has changed.
         
