@@ -4,3 +4,10 @@
 *.pyc
 *.log
 *.txt
+LLM_Training/t5_finetuned_airline_incidents/added_tokens.json
+LLM_Training/t5_finetuned_airline_incidents/config.json
+LLM_Training/t5_finetuned_airline_incidents/generation_config.json
+LLM_Training/t5_finetuned_airline_incidents/model.safetensors
+LLM_Training/t5_finetuned_airline_incidents/special_tokens_map.json
+LLM_Training/t5_finetuned_airline_incidents/spiece.model
+LLM_Training/t5_finetuned_airline_incidents/tokenizer_config.json
