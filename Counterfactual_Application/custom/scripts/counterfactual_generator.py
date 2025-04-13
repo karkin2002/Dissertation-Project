@@ -88,9 +88,49 @@ class CounterfactualGenerator:
         return counterfactuals
     
     
+    def get_output_str(original_output: str,
+                       counterfactual_data: dict[str, list[tuple[str, str]]],
+                       include_correct: bool = True,
+                       include_incorrect: bool = True) -> str:
+        
+        output = ""
+        
+        for word in counterfactual_data:
+            
+            correct = False
+            incorrect = False
+            
+            word_output = ""
+            if counterfactual_data[word] != []:
+                
+                word_output += f"\n\nOriginal Word: {word}"
+                
+                for i in counterfactual_data[word]:
+                    
+                    replacement_text = f"\nReplaced with: \"{i[0]}\" \n└──>New Output: \"{i[1]}\""
+                    
+                    if i[1] == original_output:
+                        if include_correct:
+                            word_output += replacement_text
+                            
+                        correct = True
+                        
+                    else:
+                        if include_incorrect:
+                            word_output += replacement_text
+                            
+                        incorrect = True
+                        
+            
+            if (correct and include_correct) or (incorrect and include_incorrect):
+                output += word_output
+                
+        return output[2:] if output != "" else "None."
+    
+    
     def get_output(window, input: str, output: str, llm: PreTrainedLLM):
         
-        print(f"Original Input: {input} \n Original Output: {output}")
+        Logger.log_info(f"Generating Counterfactuals for: {input} \n\nOutput: {output}")
         
         file = FileHandler("test.txt")
         
@@ -113,52 +153,68 @@ class CounterfactualGenerator:
         num_of_items = 0
         num_of_matching_predictions = 0
         
-        file.content += "\n\n---\nSynonyms"
-        
-        for i in synonsyms:
-            if synonsyms[i] != []:
-                file.content += f"\n\nOriginal Word: {i}"
-                for j in synonsyms[i]:
-                    num_of_items += 1
-                    if j[1] == output:
-                        num_of_matching_predictions += 1
-                        file.content += f"\nReplaced with: \"{j[0]}\" \n└──>New Output: \"{j[1]}\""
-                
-        file.content += "\n\n---\nAntonyms"
-        
-        for i in antonyms:
-            if antonyms[i] != []:
-                file.content += f"\n\nOriginal Word: {i}"
-                for j in antonyms[i]:
-                    num_of_items += 1
-                    if j[1] == output:
-                        num_of_matching_predictions += 1
-                        file.content += f"\nReplaced with: \"{j[0]}\" \n└──>New Output: \"{j[1]}\""
+        for word in synonsyms:
+            num_of_items += len(synonsyms[word])
+            
+            for i in synonsyms[word]:
+                if i[1] == output:
+                    num_of_matching_predictions += 1
                     
-        file.content += "\n\n---\nSummary"
-        file.content += f"\n\nNumber of Counterfactuals: {num_of_items}"
-        file.content += f"\nNumber of Matching Predictions: {num_of_matching_predictions}"
-        file.content += f"\nPercentage of Matching Predictions: {num_of_matching_predictions / num_of_items * 100:.2f}%"
-        file.content += f"\n\nNumber of Non-matching Predictions: {num_of_items - num_of_matching_predictions}"
-        file.content += f"\nPercentage of Non-matching Predictions: {(num_of_items - num_of_matching_predictions) / num_of_items * 100:.2f}%"
-        file.content += "\n\n---\nEnd of File"
+        for word in antonyms:
+            num_of_items += len(antonyms[word])
+            
+            for i in antonyms[word]:
+                if i[1] == output:
+                    num_of_matching_predictions += 1
+        
+        synonyms_text = CounterfactualGenerator.get_output_str(output, synonsyms, True, True)
+        correct_synonyms = CounterfactualGenerator.get_output_str(output, synonsyms, True, False)
+        incorrect_synonyms = CounterfactualGenerator.get_output_str(output, synonsyms, False, True)
+        print(incorrect_synonyms)
+           
+        antonyms_text = CounterfactualGenerator.get_output_str(output, antonyms, True, True)
+        correct_antonyms = CounterfactualGenerator.get_output_str(output, antonyms, True, False)
+        incorrect_antonyms = CounterfactualGenerator.get_output_str(output, antonyms, False, True)
+        
+                    
+        summary = f"Number of Counterfactuals: {num_of_items}"
+        summary += f"\nNumber of Matching Predictions: {num_of_matching_predictions}"
+        summary += f"\nPercentage of Matching Predictions: {num_of_matching_predictions / num_of_items * 100:.2f}%"
+        summary += f"\n\nNumber of Non-matching Predictions: {num_of_items - num_of_matching_predictions}"
+        summary += f"\nPercentage of Non-matching Predictions: {(num_of_items - num_of_matching_predictions) / num_of_items * 100:.2f}%"
+        
         
         window.get_elem("LOADING_BAR_TEXT").update_text(window.win_dim, f"Generating Analysis...")
         window.events()
         window.draw()
         
-        analysis_llm = PreTrainedLLM(model_type=PreTrainedLLM.QWEN)
-        analysis_llm.set_model_folder_path(r"/home/arkin/Documents/LLMs/DeepSeek-R1-Distill-Llama-8B")
-        analysis_llm.max_input_length = 4000
-        analysis_llm.max_output_length = 6000
-        information = """
-Scenario: A engineer / airline crew member has written a report detailing an airline incident. The report is fed into an Large Language Model, whereby the output is a prediction of the part failure. To explain the LLMs prediction, the LLM generates counterfactuals. This works by iterating through each word in the input and replacing it with a synonym or antonym and observing how the output has changed.
+#         analysis_llm = PreTrainedLLM(model_type=PreTrainedLLM.QWEN)
+#         analysis_llm.set_model_folder_path(r"C:\Users\karki\Qwen2.5-3B")
+#         analysis_llm.max_input_length = 4000
+#         analysis_llm.max_output_length = 6000
+#         information = """
+# Scenario: A engineer / airline crew member has written a report detailing an airline incident. The report is fed into an Large Language Model, whereby the output is a prediction of the part failure. To explain the LLMs prediction, the LLM generates counterfactuals. This works by iterating through each word in the input and replacing it with a synonym or antonym and observing how the output has changed.
         
-Task: You must provide a short 2 paragraph summary on what the counterfactuals can tell us about the prediction. Remember that not all synonym and antonym replacements are relevant to the scenario.
+# Task: You must provide a short 2 paragraph summary on what the counterfactuals can tell us about the prediction. Remember that not all synonym and antonym replacements are relevant to the scenario.
         
-Information:"""
-        analysis_llm.set_input_text(information + file.content)
-        print("Analysis:", analysis_llm.get_output())
-                
+# Information:"""
+#         analysis_llm.set_input_text(information + file.content)
+#         print("Analysis:", analysis_llm.get_output())
+        
+        file.content = summary + synonyms_text + antonyms_text
+        print(file.content)
+        
         file.save()
+        
+        all_outputs = {
+        "DISPLAY_ALL": synonyms_text + antonyms_text,
+        "DISPLAY_SYNONYMS": synonyms_text,
+        "DISPLAY_CORRECT_SYNONYMS": correct_synonyms,
+        "DISPLAY_INCORRECT_SYNONYMS": incorrect_synonyms,
+        "DISPLAY_ANTONYMS": antonyms_text,
+        "DISPLAY_CORRECT_ANTONYMS": correct_antonyms,
+        "DISPLAY_INCORRECT_ANTONYMS": incorrect_antonyms
+        }
+        
+        return summary, all_outputs
             

@@ -21,7 +21,7 @@ is available at: https://github.com/karkin2002/Arctic-Engine
 Any code written in their main.py or ./custom/ directory is part of the project
 and is subsequently commented to reflect this.
 
---- Description6
+--- Description
 This file is the main file for the program.
 """
 
@@ -31,7 +31,7 @@ from scripts.ui.ui import WindowUI
 from custom.scripts.main_ui import MainUI
 
 ## Loading Logger and initialising.
-Logger(r"logs/UI_Organisation")  
+Logger(r"logs/Counterfactual_Application")  
 pygame.init()
 glob.init()
 

@@ -153,7 +153,7 @@ class UIElement:
         Args:
             surf (Surface): Surface to be drawn on.
         """   
-            
+        
         if self.is_displayed():
             surf.blit(self.__surf, self.__pos)
             
@@ -443,43 +443,50 @@ class TextBox(Text):
                 )
 
         font = glob.get_font(self.font)
-        
-        words = self.text.split(' ')
+        lines = self.text.split('\n')  # Split text into lines based on '\n'
         space_width, _ = font.size(' ')
         x, y = 0, 0
-        
+
         # Ellipsis size
         ellipsis_width, ellipsis_height = font.size('...')
-        
-        for i, word in enumerate(words):
-            word_width, word_height = font.size(word)
-            
-            # If the word doesn't fit on the current line, move to the next line
-            if x + word_width > new_box_dim[0]:
-                x = 0
-                y += word_height
-            
-            # If the next word or ellipsis won't fit in the box, stop and add "..."
-            next_word_width, _ = font.size(words[i + 1]) if i + 1 < len(words) else (0, 0)
-            if (
-                y + word_height > new_box_dim[1] or  # Text exceeds box height
-                (x + word_width + next_word_width + space_width > new_box_dim[0] and y + word_height + ellipsis_height > new_box_dim[1])  # Not enough room for next word or "..."
-            ):
-                # Only add ellipsis if it fits in the current line
-                if x + ellipsis_width <= new_box_dim[0] and y + ellipsis_height <= new_box_dim[1]:
-                    surface.blit(
-                        Text.createText('...', self.font, glob.get_colour(self.colour)), (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
-                    )
-                break
-            
-            # Draw the word if there's still space
-            surface.blit(
-                Text.createText(word, self.font, glob.get_colour(self.colour)), (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
-            )
-            x += word_width + space_width
+
+        for line in lines:
+            words = line.split(' ')
+            for i, word in enumerate(words):
+                word_width, word_height = font.size(word)
+
+                # If the word doesn't fit on the current line, move to the next line
+                if x + word_width > new_box_dim[0]:
+                    x = 0
+                    y += word_height
+
+                # If the next word or ellipsis won't fit in the box, stop and add "..."
+                next_word_width, _ = font.size(words[i + 1]) if i + 1 < len(words) else (0, 0)
+                if (
+                    y + word_height > new_box_dim[1] or  # Text exceeds box height
+                    (x + word_width + next_word_width + space_width > new_box_dim[0] and y + word_height + ellipsis_height > new_box_dim[1])  # Not enough room for next word or "..."
+                ):
+                    # Only add ellipsis if it fits in the current line
+                    if x + ellipsis_width <= new_box_dim[0] and y + ellipsis_height <= new_box_dim[1]:
+                        surface.blit(
+                            Text.createText('...', self.font, glob.get_colour(self.colour)),
+                            (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
+                        )
+                    break
+
+                # Draw the word if there's still space
+                surface.blit(
+                    Text.createText(word, self.font, glob.get_colour(self.colour)),
+                    (x + (self.outline_width * glob.scale), y + (self.outline_width * glob.scale))
+                )
+                x += word_width + space_width
+
+            # Move to the next line after finishing the current line
+            x = 0
+            y += font.size(' ')[1]
 
         self._create_surf(
-            surf_dim, 
+            surf_dim,
             surface
         )
             

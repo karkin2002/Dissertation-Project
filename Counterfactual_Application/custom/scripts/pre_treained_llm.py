@@ -1,6 +1,6 @@
 import torch
 from transformers import T5Tokenizer, T5ForConditionalGeneration, AutoTokenizer, AutoModelForCausalLM
-from transformers import BatchEncoding
+from scripts.utility.logger import Logger
 
 class PreTrainedLLM:
     
@@ -33,21 +33,21 @@ class PreTrainedLLM:
 
             torch.cuda.empty_cache()
 
-            print("GPU processing enabled.")
+            Logger.log_info("GPU processing enabled.")
 
             return self.GPU_DEVICE_NAME
 
         else:
-            print("GPU processing not available.")
+            Logger.log_warning("GPU processing not available.")
             return self.CPU_DEVICE_NAME
 
 
     def __load_model(self):
 
-        print(f"Loading model:'{self.__model_folder_path}'")
+        Logger.log_info(f"Loading model stored at: '{self.__model_folder_path}'")
 
         if self.__model_folder_path is None:
-            raise Exception("Model folder path is empty.")
+            Logger.raise_exception("Model folder path is empty.")
 
         if self.model_type == self.BERT:
             self.tokenizer = T5Tokenizer.from_pretrained(self.__model_folder_path)
@@ -65,10 +65,10 @@ class PreTrainedLLM:
     def __tokenise_input(self):
 
         if self.__input_text is None:
-            raise Exception("Input text is empty.")
+            Logger.raise_exception("Input text is empty.")
 
         if self.model is None or self.tokenizer is None:
-            print("Model or tokenizer is not loaded. Model and tokenizer will be loaded.")
+            Logger.log_info("Model or tokenizer is not loaded. Model and tokenizer will be loaded.")
             self.__load_model()
 
         self.tokenised_input = self.tokenizer(self.__input_text, return_tensors="pt", max_length=self.max_input_length, truncation=True).to(self.__device)
@@ -83,7 +83,7 @@ class PreTrainedLLM:
 
     def get_output(self) -> str:
         if self.tokenised_input is None:
-            raise Exception("Input has not been tokenised.")
+            Logger.raise_exception("Input has not been tokenised.")
 
         with torch.no_grad():
             output = self.model.generate(**self.tokenised_input, max_length=self.max_output_length)
