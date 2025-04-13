@@ -1,6 +1,5 @@
 from custom.scripts.pre_treained_llm import PreTrainedLLM
 from scripts.utility.logger import Logger
-from custom.scripts.file_handler import FileHandler
 import re
 from nltk.corpus import wordnet
 
@@ -131,11 +130,7 @@ class CounterfactualGenerator:
     def get_output(window, input: str, output: str, llm: PreTrainedLLM):
         
         Logger.log_info(f"Generating Counterfactuals for: {input} \n\nOutput: {output}")
-        
-        file = FileHandler("test.txt")
-        
-        file.content += f"Original Input {input}\n\nOriginal Output {output}"
-        
+
         synonsyms = CounterfactualGenerator.__get_counterfactual_outputs(
             window,
             input,
@@ -170,7 +165,6 @@ class CounterfactualGenerator:
         synonyms_text = CounterfactualGenerator.get_output_str(output, synonsyms, True, True)
         correct_synonyms = CounterfactualGenerator.get_output_str(output, synonsyms, True, False)
         incorrect_synonyms = CounterfactualGenerator.get_output_str(output, synonsyms, False, True)
-        print(incorrect_synonyms)
            
         antonyms_text = CounterfactualGenerator.get_output_str(output, antonyms, True, True)
         correct_antonyms = CounterfactualGenerator.get_output_str(output, antonyms, True, False)
@@ -184,27 +178,51 @@ class CounterfactualGenerator:
         summary += f"\nPercentage of Non-matching Predictions: {(num_of_items - num_of_matching_predictions) / num_of_items * 100:.2f}%"
         
         
-        window.get_elem("LOADING_BAR_TEXT").update_text(window.win_dim, f"Generating Analysis...")
+        window.get_elem("LOADING_BAR_TEXT").update_text(window.win_dim, f"Generating Independent LLM Analysis...")
         window.events()
         window.draw()
         
-#         analysis_llm = PreTrainedLLM(model_type=PreTrainedLLM.QWEN)
-#         analysis_llm.set_model_folder_path(r"C:\Users\karki\Qwen2.5-3B")
-#         analysis_llm.max_input_length = 4000
-#         analysis_llm.max_output_length = 6000
-#         information = """
-# Scenario: A engineer / airline crew member has written a report detailing an airline incident. The report is fed into an Large Language Model, whereby the output is a prediction of the part failure. To explain the LLMs prediction, the LLM generates counterfactuals. This works by iterating through each word in the input and replacing it with a synonym or antonym and observing how the output has changed.
+        analysis_llm = PreTrainedLLM(model_type=PreTrainedLLM.QWEN)
+        analysis_llm.set_model_folder_path(r"C:\Users\karki\Qwen2.5-7B")
+        analysis_llm.max_input_length = 4000
+        analysis_llm.max_output_length = 4000
+        information = """
+Scenario: A engineer has written a report detailing an airline incident. The report is fed into an Large Language Model, where the output is the predicted part failure. As a method of explanation, the LLM generates counterfactuals. This works by iterating through each word in the input and replacing it with a synonym or antonym and observing how the output changes.
         
-# Task: You must provide a short 2 paragraph summary on what the counterfactuals can tell us about the prediction. Remember that not all synonym and antonym replacements are relevant to the scenario.
+Task: Write a short 1 paragraph summary on what the counterfactuals can tell us about the prediction giving examples. Remember that not all synonym and antonym replacements will be relevant to the aerospace scenario.
+
+ONLY INCLUDE YOUR ANALYSIS IN THE OUTPUT. USE THE FOLLOWING FORMAT:
+'Analysis: <paragraph>'
+
+Below is the original input and output of the LLM, as well as the summary of the counterfactual results and synonym / antonym replacements that had non-matching outputs to the original. The analysis should be based on the information provided below.
+---"""
+
+
+        analysis_input = f"""
+{information}
+Original Input:
+{input}
+Original Output:
+{output}
+
+Summary Of Counterfactuals:
+{summary}
+
+Synonym Non-Matching Predictions:
+{incorrect_synonyms}
+
+Antonym Non-Matching Predictions:
+{incorrect_antonyms}
+"""
+
+        analysis_llm.set_input_text(analysis_input)
         
-# Information:"""
-#         analysis_llm.set_input_text(information + file.content)
-#         print("Analysis:", analysis_llm.get_output())
+        # counterfactual_analysis = ""
         
-        file.content = summary + synonyms_text + antonyms_text
-        print(file.content)
+        counterfactual_analysis = analysis_llm.get_output()
         
-        file.save()
+        print(counterfactual_analysis)
+        
         
         all_outputs = {
         "DISPLAY_ALL": synonyms_text + antonyms_text,
@@ -216,5 +234,5 @@ class CounterfactualGenerator:
         "DISPLAY_INCORRECT_ANTONYMS": incorrect_antonyms
         }
         
-        return summary, all_outputs
+        return summary, counterfactual_analysis, all_outputs
             

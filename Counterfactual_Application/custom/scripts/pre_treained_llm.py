@@ -86,6 +86,6 @@ class PreTrainedLLM:
             Logger.raise_exception("Input has not been tokenised.")
 
         with torch.no_grad():
-            output = self.model.generate(**self.tokenised_input, max_length=self.max_output_length)
+            output = self.model.generate(**self.tokenised_input, max_new_tokens=self.max_output_length)
 
         return self.tokenizer.decode(output[0], skip_special_tokens=True)

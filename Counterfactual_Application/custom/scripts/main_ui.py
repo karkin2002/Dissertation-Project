@@ -46,7 +46,7 @@ class MainUI:
     __TITLE_OFFSET = (40, 20)
     
     EXPLANATION = "EXPLANATION"
-    __EXPLANATION_TEXT = "As part of \"Exploratory Research on Explainable LLMs (Airbus AI Research)\", this program experiments with counterfactuals as an explability method for LLMs."
+    __EXPLANATION_TEXT = "As part of \"Exploratory Research on Explainable LLMs (Airbus AI Research)\", this program experiments with counterfactuals as an explability method for Large Language Models."
     __EXPLANATION_OFFSET = (40, 120)
     __EXPLANATION_DIM = (40, 120)
     
@@ -79,6 +79,7 @@ class MainUI:
     __COUNTERFACTUAL_OUTPUT = "COUNTERFACTUAL_OUTPUT"
     __COUNTERFACTUAL_OUTPUT_EXPLANATION = __COUNTERFACTUAL_OUTPUT + "_EXPLANATION"
     __COUNTERFACTUAL_OUTPUT_SUMMARY = __COUNTERFACTUAL_OUTPUT + "_SUMMARY"
+    __COUNTERFACTUAL_OUTPUT_ANALYSIS = __COUNTERFACTUAL_OUTPUT + "_ANALYSIS"
     __COUNTERFACTUAL_OUTPUT_DIM = (40, 3000)
     
     __RED_BUTTON = "red_button"
@@ -143,6 +144,7 @@ class MainUI:
         self.output_text_box = None
         self.counterfactual_output_text_box = None
         self.counterfactual_summary_text_box = None
+        self.counterfactual_analysis_text_box = None
         
         self.pixels_scrolled = 0
         
@@ -402,13 +404,23 @@ class MainUI:
             False,
             background=False,
             tags=[self.__COUNTERFACTUAL_OUTPUT])
+
+        self.counterfactual_analysis_text_box = TextBoxUIElem(
+            self.page_elements, 
+            window, 
+            self.__COUNTERFACTUAL_OUTPUT_ANALYSIS, 
+            (40, submit_button_pos[1] + 500), 
+            "Independent LLM Analysis",
+            False,
+            background=False,
+            tags=[self.__COUNTERFACTUAL_OUTPUT])
         
         
         self.counterfactual_output_text_box = TextBoxUIElem(
             self.page_elements, 
             window, 
             self.__COUNTERFACTUAL_OUTPUT_EXPLANATION, 
-            (40, submit_button_pos[1] + 500), 
+            (40, submit_button_pos[1] + 900), 
             "Explanation",
             False,
             True,
@@ -447,7 +459,7 @@ class MainUI:
             )
         )
         
-        
+
     def __setup_settings_menu(self, window: WindowUI):
         glob.add_tag(Tag(self.__OUTPUT_SETTINGS, "Settings for how to display the output", False))
         
@@ -488,6 +500,7 @@ class MainUI:
         window.get_elem(self.__DISPLAY_ALL).toggle()
         
         
+        
     def __handel_settings_menu(self, window: WindowUI):
         
         toggled_button = None
@@ -514,18 +527,6 @@ class MainUI:
             window.get_elem(self.counterfactual_output_text_box.text_box_name).update_text(window.win_dim, self.counterfactual_explanations[self.output_format])
             
             glob.get_tag(self.__OUTPUT_SETTINGS).display = False
-                
-                
-                    
-                
-
-        
-        
-        
-        
-        
-        
-        
         
     
     def handle_inputs(self, window: WindowUI, run_first_time: bool):
@@ -578,17 +579,22 @@ class MainUI:
             window.events()
             window.draw()
             
-            summary, self.counterfactual_explanations = CounterfactualGenerator.get_output(window, self.llm_input, self.llm_output, self.llm)
+            summary, counterfactual_analysis, self.counterfactual_explanations = CounterfactualGenerator.get_output(window, self.llm_input, self.llm_output, self.llm)
             
             glob.get_tag(self.__LOADING_BAR).display = False
             
             window.get_elem(self.counterfactual_summary_text_box.text_box_name).update_text(window.win_dim, summary)
+            window.get_elem(self.counterfactual_analysis_text_box.text_box_name).update_text(window.win_dim, counterfactual_analysis)
             window.get_elem(self.counterfactual_output_text_box.text_box_name).update_text(window.win_dim, self.counterfactual_explanations[self.output_format])
             glob.get_tag(self.__COUNTERFACTUAL_OUTPUT).display = True
             
         self.output_text_box.handle_inputs(window, run_first_time)
         
         self.counterfactual_summary_text_box.handle_inputs(
+            window, 
+            run_first_time)
+        
+        self.counterfactual_analysis_text_box.handle_inputs(
             window, 
             run_first_time)
         
